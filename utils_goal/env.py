@@ -12,7 +12,7 @@ def _format_observation(obs):
     return obs
 
 #this is a new enviornment wrapper. this part of the code is new,
-#The general stucture is based on wrpaaer of Amigo, but almost all is changed or added.https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
+#The general stucture is based on wrapper of Amigo, but almost all is changed or added.https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
 class Observation_WrapperMiniGrid(gym.core.Wrapper):
     """
     Wrapper that add to the environemnts the capability to hols goals, check if a goals has been reached.
@@ -250,9 +250,10 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
 
     def render(self, mode='human', close=False, highlight=True, tile_size=TILE_PIXELS, goal=False):
-        """
-        Render the whole-grid human view
-        """
+        #Rendering an image image_minigrid
+        #The code is based on code from https://github.com/maximecb/gym-minigrid/blob/master/gym_minigrid/minigrid.py
+        #but changed to add goal
+
 
         if close:
             if self.window:

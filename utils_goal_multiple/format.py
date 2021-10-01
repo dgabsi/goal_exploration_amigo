@@ -8,7 +8,8 @@ import gym
 
 import utils_goal_multiple
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
+#But relevent parts have been changed
 def get_obss_preprocessor(obs_space, with_goal=True):
     # Check if obs_space is an image space
     if isinstance(obs_space, gym.spaces.Box):

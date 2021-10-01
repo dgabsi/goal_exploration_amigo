@@ -369,6 +369,7 @@ class BaseAlgo(ABC):
             self.log_episode_reach_steps += self.goal_reached_steps
 
             # based on framework of https://github.com/lcswillems/torch-ac
+            #But changed to add goal logs
             for b, done_ in enumerate(done):
                 if done_:  # Update logs at the end of episode
                     self.log_done_counter += 1
@@ -663,7 +664,7 @@ class BaseAlgo(ABC):
             self.env.delete_goal(deleted_goal)  # Delete the reached goals from the environemnt
 
     def update_goal_advantages(self, proc):
-        # Update goal advanatges. this is clculated at the end of the episode
+        # Update goal advanatges. this is calculated at the end of the episode
         # this part of the code is original
         eps_length = self.goal_curr_ind[proc].item()
         self.goal_masks[proc][eps_length] = 0

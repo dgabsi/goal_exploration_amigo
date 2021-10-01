@@ -12,16 +12,18 @@ def _format_observation(obs):
     return obs #np.expand_dims(obs,0)
 
 
+#this is a new enviornment wrapper. this part of the code is new,
+#The general stucture is based on wrapper of Amigo, but almost all is changed or added.https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
 class Observation_WrapperMiniGrid(gym.core.Wrapper):
     """
-    Wrapper to customize the agent field of view size.
-    This cannot be used with fully observable wrappers.
-    """
+        Wrapper that add to the environemnts the capability to holdgoals, check if a goals has been reached.
+        It also calculates diff_location, which is the location that have been changed at each step
+        """
 
     def __init__(self, env, env_seed=None, fix_seed=True, modify=True):
         super().__init__(env)
 
-        #self.env=env
+        # Attibutes for saving information about goals and diff location
         self.episode_return = None
         self.episode_step = 0
         self.episode_win = None
@@ -29,10 +31,9 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         self.env_seed = env_seed
         self.last_frame=None
         self.last_diff=None
-        #self.goal_generator=goal_generator
+
         self.goal=[]
-        #self.goal_log_prob=None
-        #self.goal_value=None
+
         self.max_steps=self.max_steps
         self.goal_frame=[]
         self.reached_goal=np.array(0, dtype=np.uint8)
@@ -53,7 +54,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
     def reset(self, **kwargs):
 
-        #obs, reward, done, info = super().step(0)
+        # If the former episode was terminated in a success , then the reset step will give the goal information. since it automaticly goes to reset.
         goal=-1
         goal_step=-1
 
@@ -71,7 +72,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         if self.fix_seed:
             super().seed(seed=self.env_seed)
 
-        obs = super().reset(**kwargs)
+        obs = super().reset(**kwargs) #call the reset step of previous wrapper
 
         initial_reward = 0
         self.episode_return = 0
@@ -83,7 +84,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
         text_obs = obs['mission']
         self.last_frame=obs['image']
-        #self.prev_diff=-1
+
         W, H, C = initial_frame.shape
 
         frame=self.initial_frame.copy()
@@ -93,6 +94,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         diff=-1
         self.prev_diff=None
 
+        # In the reset step there is no goal
         self.reached_goal=0
         self.goal=[]
         self.goal_frame=[]
@@ -154,6 +156,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         self.curr_goal_reached = None
         self.curr_goal_step_given = None
 
+        # Calculate diff location and decide which is the newest diff location based on the former diff location
         diff_type = 0
         compare_frame=self.last_frame.copy()
         if compare_frame is not None:
@@ -184,7 +187,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
         self.reached_goal = 0
         reached_goal = 0
-        #reached_goal=self.reached_goal.copy()
+        #Check if the diff location contains the goal
         for ind, curr_goal in enumerate(self.goal):
             goal=curr_goal
             goal_frame=self.goal_frame[ind].copy()
@@ -249,7 +252,8 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
 
     def update_goal(self, goal_data):
-
+        # Update goals data in the enviornment
+        #Always updates the goals
         goal, goal_frame, _, goal_diff= goal_data["goal"],goal_data["goal_frame"],goal_data["goal_new"],goal_data["goal_diff"]
 
         self.step_goal_given.append(self.episode_step)
@@ -258,20 +262,12 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         self.goal.append(goal)
         self.goal_frame.append(goal_frame.copy())
         self.goal_diff.append(goal_diff)
-        #else:
-        #    self.step_goal_given=self.step_goal_given
 
-        #goal=int( self.env.goal.copy())
-        #goal_value=int( self.env.goal_value.copy())
-        #goal_log_prob=int( self.env.goal_log_prob.copy())
-        #goal_frame= self.env.goal_frame.copy()
-
-        #return 0,1,2,3
 
         return goal
 
     def delete_goal(self,deleted_goal):
-
+        #Delete a goal from the environemnt
         if deleted_goal!=-1:
             for ind, curr_goal in enumerate(self.goal):
                 if curr_goal==deleted_goal:
@@ -285,9 +281,9 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
 
     def render(self, mode='human', close=False, highlight=True, tile_size=TILE_PIXELS, goal=False):
-        """
-        Render the whole-grid human view
-        """
+        #Rendering an image image_minigrid
+    #The code is based on code from https://github.com/maximecb/gym-minigrid/blob/master/gym_minigrid/minigrid.py
+    #but changed to add goal
 
         if close:
             if self.window:
@@ -363,6 +359,9 @@ def make_env(env_key, seed=None, fix_seed=True, modify=True, video_dir=None):
 
 
 def diff_frame(new_frame, frame, initial_frame, is_area_interes=False):
+    # Calculate the diff location
+    # Which locations have changed in one of :object, color or state
+
     new_frame=new_frame.copy()
     frame=frame.copy()
     inital_frame = initial_frame.copy()

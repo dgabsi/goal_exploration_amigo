@@ -7,7 +7,8 @@ import numpy as np
 from amigo_generator_model import  Amigo_GoalGenerator
 from amigo_ac_model import Amigo_ACModel
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
+#But relevent parts have been changed
 class Agent:
     """An agent.
 
@@ -145,66 +146,6 @@ class Agent:
                                       "goal_frame":goal_obs[proc].clone().numpy(),
                                       "goal_new": new_goal[proc],
                                       "goal_diff": goal_diff[proc].clone().item()
-                                          })
-            if update:
-                self.goal = goal.clone()
-                self.goal_obs = goal_obs.clone()
-                self.goal_diff = goal_diff.clone()
-                self.goal_memory = goal_memory.clone()
-
-        return obs, goal_inf_list
-
-
-
-
-    def update_goals1(self, obs, update=True):
-
-        goal_inf_list=[]
-
-        if self.goal_generator is not None:
-            self.goal_generator.eval()
-
-
-            goal=self.goal.clone()
-            goal_obs= self.goal_obs.clone()
-            goal_diff= self.goal_diff.clone()
-            goal_memory=self.goal_memory.clone()
-            new_goal=np.zeros(1, dtype=np.float32)
-
-            preprocessed_obs=self.preprocess_obss([obs])
-            #teacher_quality_goal=torch.zeros(self.num_procs,requires_grad=False)
-            with torch.no_grad():
-                if self.goal_generator.recurrent:
-                    s_goals, s_goal_log_probs, s_goal_values, s_goal_distr, s_g_memory = self.goal_generator(preprocessed_obs.image.clone().to(self.device), init_obs=preprocessed_obs.init_image.clone().to(self.device), diff=preprocessed_obs.diff.clone().to(self.device), memory=goal_memory.to(self.device), carried_col=preprocessed_obs.carried_col.clone().to(self.device), carried_obj=preprocessed_obs.carried_obj.clone().to(self.device), return_distribution=True)
-                else:
-                    s_goals, s_goal_log_probs, s_goal_values, s_goal_distr, _ = self.goal_generator(preprocessed_obs.image.clone().to(self.device), init_obs=preprocessed_obs.init_image.clone().to(self.device), diff=preprocessed_obs.diff.clone().to(self.device), carried_col=preprocessed_obs.carried_col.clone().to(self.device), carried_obj=preprocessed_obs.carried_obj.clone().to(self.device), return_distribution=True)
-                goal_memory = s_g_memory.clone().cpu()
-                #This changed
-                s_goals=s_goals.detach().clone().cpu()
-                s_g_memory=s_g_memory.detach().clone().cpu()
-            if (((preprocessed_obs.reached_goal[0].item()>0) or (preprocessed_obs.goal[0].item() < 0))):
-                    goal[0] = s_goals[0].squeeze().clone()
-                    goal_obs[0] = preprocessed_obs.image[0].clone()
-                    goal_diff[0] = preprocessed_obs.diff[0].clone()
-                    new_goal[0]=1.
-                    if self.goal_generator.recurrent:
-                        goal_memory[0] = s_g_memory[0].clone()
-                    obs["goal"] = goal[0].clone().item()
-                    obs["goal_image"] = goal_obs[0].clone().numpy()
-                    obs["goal_diff"] = goal_diff[0].clone().item()
-                    obs["goal_step"] = obs["episode_step"]
-                    obs["reached_goal"] = 0
-                    obs["last_e_reached"] = 0
-                    obs["last_e_step"] = -1
-                    obs["last_e_r_weight"] = 0
-                    #self.teacher_quality_r[proc] = self.get_cell_potenetial(preprocessed_obs.init_image[proc].clone(), preprocessed_obs.goal[proc].clone())
-            else:
-                    new_goal[0] = 0
-                    #self.teacher_quality_r[proc]=0
-            goal_inf_list.append({"goal":goal[0].clone().item(),
-                                      "goal_frame":goal_obs[0].clone().numpy(),
-                                      "goal_new": new_goal[0],
-                                      "goal_diff": goal_diff[0].clone().item()
                                           })
             if update:
                 self.goal = goal.clone()

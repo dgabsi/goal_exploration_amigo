@@ -3,6 +3,7 @@ import numpy
 import torch
 import collections
 
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
 
 def seed(seed):
     random.seed(seed)

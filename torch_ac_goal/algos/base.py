@@ -214,6 +214,9 @@ class BaseAlgo(ABC):
         logs : dict
             Useful stats about the training process, including the average
             reward, policy loss, value loss, etc.
+        next_exps_goals:
+            Contains observation, goals, rewards, advantages and other goal attributues . collected for optimization.
+            Relevent for Amigo
         """
 
         #The goal generator and model are in eval state during rollout
@@ -457,7 +460,7 @@ class BaseAlgo(ABC):
         exps.log_prob = self.log_probs.transpose(0, 1).reshape(-1).to(self.device)
         exps.init_obs = self.init_obss.transpose(0, 1).flatten(0,1).to(self.device)
 
-
+        #Experiences for goals
         if self.goal_generator:
             exps.goal_log_prob = self.goal_log_probs.transpose(0, 1).reshape(-1).to(self.device)
             exps.goal_value = self.goal_values.transpose(0, 1).reshape(-1).to(self.device)
@@ -481,6 +484,7 @@ class BaseAlgo(ABC):
 
 
         batch_exps_goals=None
+        #this is for the Amigo implementation. collect only rewarded goals from the experience
         if not self.goal_generator_info["train_together"]:
             exps_goals = DictList()
             reach_ind=(((exps.teacher_reward!=0.).squeeze().to(torch.float))==1.0).squeeze()

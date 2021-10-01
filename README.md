@@ -51,14 +51,13 @@ For AMIGo mutltiple run:
 - For DoorKey run:
   - python3 train_goal_multiple.py --env MiniGrid-DoorKey-8x8-v0  --frames 5000000 --procs 40 --lr 0.001 --lr-teacher 0.002 --with_amigo_nets 
 
-For evaluate AMIGo concurrent run:
+To evaluate AMIGo concurrent run:
 - For FourRooms run:
   - python3 evaluate_goal.py --env MiniGrid-FourRooms-v0 --model FOURROOMS_CONCURRENT 
 - For DoorKey run:
   - python3 evaluate_goal.py --env MiniGrid-DoorKey-8x8-v0 --model DOORKEY_CONCURRENT --with_amigo-nets
 
-
-For AMIGo mutltiple run:
+To evaluate AMIGo mutltiple run:
 - For FourRooms run:
   -python3 evaluate_goal_multiple.py --env MiniGrid-FourRooms-v0 --model FOURROOMS_MULTIPLE  
 - For DoorKey run:

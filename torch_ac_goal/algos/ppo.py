@@ -11,7 +11,7 @@ from torch_ac_goal.algos.base import BaseAlgo
 
 #The implementation is based on the RL torch-ac framework available at https://github.com/lcswillems/torch-ac
 #but was changed considerably to add AMIGo capabilities
-# as refernce for AMIGo I used  https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
+# as reference for AMIGo I used  https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
 
 class PPOAlgo(BaseAlgo):
     """The Proximal Policy Optimization algorithm

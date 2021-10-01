@@ -5,7 +5,8 @@ import logging
 import sys
 
 import utils_goal_multiple
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
+#But relevent parts have been changed
 
 def create_folders_if_necessary(path):
     dirname = os.path.dirname(path)

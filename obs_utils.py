@@ -19,6 +19,7 @@ def analyse_image_atr(image):
 def render_image(image):
     #Rendering an image image_minigrid
     #The code is based on code from https://github.com/maximecb/gym-minigrid/blob/master/gym_minigrid/minigrid.py
+    #but changed to aff goal
 
     tile_size=TILE_PIXELS
     image_minigrid_f, goal_location, agent_location = analyse_image_atr(image)

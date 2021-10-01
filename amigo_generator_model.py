@@ -210,21 +210,6 @@ class Amigo_GoalGenerator(nn.Module, torch_ac_goal_multiple.RecurrentACModel):
         else:
             return embed(x)
 
-    def add_exploration(self, goal: torch.Tensor, itr: int, mode='train'):
-        if mode == 'train':
-            expl_amount = self.train_noise
-            expl_amount = expl_amount - itr / self.expl_decay
-            expl_amount = max(self.expl_min, expl_amount)
-        elif mode == 'eval':
-            expl_amount = self.eval_noise
-        else:
-            raise NotImplementedError
-
-        if np.random.uniform(0, 1) < expl_amount:
-            goal = torch.randint(0, self.env_dim, goal.size(), device=self.device)
-            return goal
-        else:
-            return goal
 
     def get_critic_value(self, goal_logits):
 
