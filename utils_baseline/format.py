@@ -39,13 +39,13 @@ def get_obss_preprocessor(obs_space):
 
     return obs_space, preprocess_obss
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
 def preprocess_images(images, device=None):
     # Bug of Pytorch: very slow if not first converted to numpy array
     images = numpy.array(images)
     return torch.tensor(images, device=device, dtype=torch.float)
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
 def preprocess_texts(texts, vocab, device=None):
     var_indexed_texts = []
     max_text_len = 0
@@ -63,7 +63,7 @@ def preprocess_texts(texts, vocab, device=None):
 
     return torch.tensor(indexed_texts, device=device, dtype=torch.long)
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
 class Vocabulary:
     """A mapping from tokens to ids with a capacity of `max_size` words.
     It can be saved in a `vocab.json` file."""

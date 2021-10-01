@@ -25,6 +25,7 @@ def get_obss_preprocessor(obs_space, with_goal=True):
         obs_space = {"image": obs_space.spaces["image"].shape, "text": 100}
 
         vocab = Vocabulary(obs_space["text"])
+        #This is new and changed to add the goal information
         def preprocess_obss(obss, device=None):
             if with_goal:
                 return torch_ac_goal_multiple.DictList({
@@ -73,13 +74,13 @@ def get_obss_preprocessor(obs_space, with_goal=True):
 
 
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
 def preprocess_torch(torch_ent, device=None):
     # Bug of Pytorch: very slow if not first converted to numpy array
     torch_ent = numpy.array(torch_ent)
     return torch.from_numpy(torch_ent).to(device)
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
 def preprocess_texts(texts, vocab, device=None):
     var_indexed_texts = []
     max_text_len = 0
@@ -97,7 +98,7 @@ def preprocess_texts(texts, vocab, device=None):
 
     return torch.tensor(indexed_texts, device=device, dtype=torch.long)
 
-
+#this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
 class Vocabulary:
     """A mapping from tokens to ids with a capacity of `max_size` words.
     It can be saved in a `vocab.json` file."""

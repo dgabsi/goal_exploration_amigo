@@ -67,7 +67,7 @@ class BaseAlgo(ABC):
             the number of steps the goal gradient is propagated back in time
 
         """
-
+        #This is based on https://github.com/lcswillems/torch-ac
         # Store parameters
         self.env = ParallelEnv(envs)
         self.acmodel = acmodel
@@ -96,9 +96,12 @@ class BaseAlgo(ABC):
         assert self.acmodel.recurrent or self.recurrence == 1
         assert self.num_frames_per_proc % self.recurrence == 0
 
+        # This part is new. adding the goal generator(teacher) and other goal attibutes
         assert self.goal_generator.recurrent or self.goal_recurrence == 1
         assert self.num_frames_per_proc % self.goal_recurrence == 0
-        # Configure acmodel
+
+
+        # #This is based on https://github.com/lcswillems/torch-ac
         self.acmodel = self.acmodel.to(self.device)
         self.acmodel.eval()
         self.goal_generator.eval()
@@ -109,7 +112,7 @@ class BaseAlgo(ABC):
         self.num_frames = self.num_frames_per_proc * self.num_procs
 
         # Initialize experience values
-
+        # This is based on https://github.com/lcswillems/torch-ac
         shape = (self.num_frames_per_proc, self.num_procs)
 
         self.obs = self.env.reset()
@@ -194,6 +197,7 @@ class BaseAlgo(ABC):
         self.log_proc_teacher_reward = [[] for i in range(shape[1])]
 
         # Episode logs
+        # This is based on https://github.com/lcswillems/torch-ac
         self.goal_episode_reached_count = torch.zeros(shape[1], device=self.device)
         self.log_episode_goal_count = torch.ones(shape[1], device=self.device)
         self.log_episode_return = torch.zeros(shape[1], device=self.device)
@@ -207,13 +211,13 @@ class BaseAlgo(ABC):
         self.log_episode_reach_steps = torch.zeros(shape[1], device=self.device)
 
         # Logs lists for all episodes
-
+        # This is based on https://github.com/lcswillems/torch-ac
         self.log_done_counter = 0
         self.log_return = [0] * self.num_procs
         self.log_reshaped_return = [0] * self.num_procs
         self.log_num_frames = [0] * self.num_procs
 
-        # This part is added. adding logs for goals
+        # This part is new. adding logs for goals
         self.log_goal_reached = [0] * self.num_procs
         self.log_teacher_reward = [0] * self.num_procs
         self.log_reach_steps = [0] * self.num_procs
@@ -271,6 +275,7 @@ class BaseAlgo(ABC):
             # get value and action distribution form student network
 
             # only adding the goal is new
+            # This is based on https://github.com/lcswillems/torch-ac
             with torch.no_grad():
                 preporocessed_curr_obs_model = self.preprocess_obss(self.obs, device=self.device)
                 preporocessed_curr_obs_model.image = preporocessed_curr_obs_model.image.to(self.device)
@@ -291,6 +296,7 @@ class BaseAlgo(ABC):
             obs, reward, done, _ = self.env.step(action.cpu().numpy())
 
             # Update student experiences values
+            # This is based on https://github.com/lcswillems/torch-ac
             self.obss[i] = self.obs
             if self.acmodel.recurrent:
                 self.memories[i] = self.memory
@@ -308,7 +314,7 @@ class BaseAlgo(ABC):
             curr_obs = self.preprocess_obss(obs, device=self.device)
 
             # reward shaping
-            # This part is new but within the framework of https://github.com/lcswillems/torch-ac
+            # All of This part is new but within the framework of https://github.com/lcswillems/torch-ac
             if len(self.reshape_reward) > 0:
                 curr_intrin_reward = torch.zeros(self.num_procs).to(self.device)
                 for reshaped_reward in self.reshape_reward:
@@ -343,7 +349,7 @@ class BaseAlgo(ABC):
                 # Update teacher rewards backward if goal was reached
                 self.update_hinsight_reward_teacher(torch.tensor(reward, device=self.device), preprocessed_obs,
                                                     curr_obs, done)
-            else:
+            else:# This is based on https://github.com/lcswillems/torch-ac
                 self.rewards[i] = torch.tensor(reward, device=self.device)
                 self.orig_rewards[i] = torch.tensor(reward, device=self.device)
 
@@ -370,6 +376,7 @@ class BaseAlgo(ABC):
 
             # based on framework of https://github.com/lcswillems/torch-ac
             #But changed to add goal logs
+            #Calilcating logs for gaols values is new
             for b, done_ in enumerate(done):
                 if done_:  # Update logs at the end of episode
                     self.log_done_counter += 1
@@ -430,9 +437,11 @@ class BaseAlgo(ABC):
                     self.reset_eps_proc(b)
 
             # If episode ended , initialize log episode
+            # based on framework of https://github.com/lcswillems/torch-ac
             self.log_episode_return *= self.mask
             self.log_episode_reshaped_return *= self.mask
             self.log_episode_num_frames *= self.mask
+            # # this is is new.
             self.log_episode_goal_reached *= self.mask
             self.log_episode_reach_steps *= self.mask
 
@@ -472,6 +481,7 @@ class BaseAlgo(ABC):
         # This is from the framework of https://github.com/lcswillems/torch-ac
 
         # Define student collected experiences:
+        # This is based on framework of https://github.com/lcswillems/torch-ac
         exps = DictList()
         exps.obs = [self.obss[i][j]
                     for j in range(self.num_procs)
@@ -532,6 +542,7 @@ class BaseAlgo(ABC):
     def update_goals(self, obs, update=True):
         # Update goals. Goals are suggested at each step (They can also be the same goals)
         # this part of the code is new
+
         goal_inf_list = []
         if self.goal_generator is not None:
             self.goal_generator.eval()
@@ -608,6 +619,7 @@ class BaseAlgo(ABC):
     def update_hinsight_reward_teacher(self, external_reward, preprocessed_obs, curr_obs, done):
         # Update teacher rewards backwards for reached goal. If reached goal all steps that suggested it recieve a reward according to their step.
         # this part of the code is original
+        # This part is new.
 
         for reshaped_reward in self.reshape_reward:
             if (reshaped_reward["type"] == "teacher_goal_reward"):
@@ -666,6 +678,8 @@ class BaseAlgo(ABC):
     def update_goal_advantages(self, proc):
         # Update goal advanatges. this is calculated at the end of the episode
         # this part of the code is original
+        # This part is new.
+
         eps_length = self.goal_curr_ind[proc].item()
         self.goal_masks[proc][eps_length] = 0
         self.goal_masks[proc][0] = 0

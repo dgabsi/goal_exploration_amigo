@@ -5,6 +5,9 @@ import torch
 
 import utils_goal_multiple
 
+#Evaluate an agent performence. after it has been trained
+# The basis of script is https://github.com/lcswillems/rl-starter-files/blob/master/scripts/
+#but is has been change to add AMIGO capabilities
 
 # Parse arguments
 

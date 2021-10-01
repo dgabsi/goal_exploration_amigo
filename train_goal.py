@@ -159,7 +159,7 @@ args.goal_mem = args.goal_recurrence > 1
 # Set run dir
 
 date = datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-default_model_name = f"{args.env}_goal_seed{args.seed}_{date}"
+default_model_name = f"{args.env}_goal_{date}"
 
 model_name = args.model or default_model_name
 model_dir = utils_goal.get_model_dir(model_name)

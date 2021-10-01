@@ -4,6 +4,10 @@ import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 import torch_ac_baseline
 
+#########################################################
+# This is part of basline framework. code is from https://github.com/lcswillems/rl-starter-files/blob/master/scripts/
+#Used to comapre to baseline
+###############################################################
 
 # Function from https://github.com/ikostrikov/pytorch-a2c-ppo-acktr/blob/master/model.py
 def init_params(m):

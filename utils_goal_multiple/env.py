@@ -13,10 +13,11 @@ def _format_observation(obs):
 
 
 #this is a new enviornment wrapper. this part of the code is new,
-#The general stucture is based on wrapper of Amigo, but almost all is changed or added.https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
+#The general stucture is based on wrapper of Amigo, .https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
+# but almost all is changed or added.
 class Observation_WrapperMiniGrid(gym.core.Wrapper):
     """
-        Wrapper that add to the environemnts the capability to holdgoals, check if a goals has been reached.
+        Wrapper that add to the environemnts the capability to hold goals, check if a goals has been reached.
         It also calculates diff_location, which is the location that have been changed at each step
         """
 
@@ -53,6 +54,8 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
 
     def reset(self, **kwargs):
+        #Reset the environment
+        #Return the initial observation
 
         # If the former episode was terminated in a success , then the reset step will give the goal information. since it automaticly goes to reset.
         goal=-1
@@ -95,6 +98,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         self.prev_diff=None
 
         # In the reset step there is no goal
+        #All goals data is empty and diff location is empty
         self.reached_goal=0
         self.goal=[]
         self.goal_frame=[]
@@ -104,13 +108,13 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         self.curr_goal_reached=None
         self.curr_goal_step_given=None
 
-
+        #This is based on AMIGo
         carried_col, carried_obj = np.long(5), np.long(1)
         if self.carrying:
             carried_col, carried_obj = np.long(COLOR_TO_IDX[self.carrying.color]), np.long(
                 OBJECT_TO_IDX[self.carrying.type])
 
-
+        #Return obsevation data
         return dict(
             image=frame.copy(),
             reward=initial_reward,
@@ -137,7 +141,8 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
 
     def step(self, action):
-
+    #Step in the environemnt, perform an action.
+    #Return the nre observation
         frame, reward, done, info = super().step(action)
 
         self.episode_step += 1
@@ -212,6 +217,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
             reached_weight = 0
 
         if diff is not None:
+            #If more then one diff , take a random diff
             if len(diff)>=1:
                 diff = int(np.random.choice(diff, 1))
         else:
@@ -220,11 +226,12 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
         reward = reward
         done = done
 
+        #This is based on https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
         carried_col, carried_obj = np.long(5), np.long(1)
         if self.carrying:
             carried_col, carried_obj = np.long(COLOR_TO_IDX[self.carrying.color]), np.long(OBJECT_TO_IDX[self.carrying.type])
 
-
+        #Return new observation
         return dict(
             image=frame,
             reward=reward,
@@ -348,6 +355,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
 
 def make_env(env_key, seed=None, fix_seed=True, modify=True, video_dir=None):
+    #Create an enironemnt
     env = gym.make(env_key)
     env = FullyObsWrapper(env)
     #if video_dir is not None:
@@ -371,14 +379,8 @@ def diff_frame(new_frame, frame, initial_frame, is_area_interes=False):
     diff = (new_obs == prev_obs)
     ans=(np.sum(diff, -1) != 3).astype(np.float32)
     if ans.any():
-        diff_loc= np.argwhere(ans>0)#np.argmax(ans)
+        diff_loc= np.argwhere(ans>0)
 
-        sum_initial=np.sum(inital_obs,-1)
-        initial_z_score=(sum_initial- np.mean(sum_initial))/np.std( sum_initial)
-
-        a=np.abs(initial_z_score[diff_loc])
-        #if np.abs(initial_z_score[diff_loc])<1:
-        #    diff_loc = None
     else:
         diff_loc=None
 

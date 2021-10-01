@@ -31,7 +31,7 @@ class PPOAlgo(BaseAlgo):
         self.total_frames = total_frames
         self.processes = len(envs)
 
-
+        #Rhis is based on https://github.com/lcswillems/torch-ac
         if self.acmodel is not None:
             self.batch_size = batch_size
             assert self.batch_size % self.recurrence == 0
@@ -40,7 +40,7 @@ class PPOAlgo(BaseAlgo):
             self.batch_size = batch_size
             #self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, self.lr_lambda)
 
-        # This part is new-creating optimizer for the goal generator (teacher)
+        # This part is new-creating optimizer for the goal generator (teacher). New
         if self.goal_generator is not None:
             assert self.goal_batch_size % self.goal_recurrence == 0
             self.goal_batch_num = 0
@@ -56,7 +56,7 @@ class PPOAlgo(BaseAlgo):
 
         for _ in range(self.epochs):
             # Initialize log values
-
+            #this is from https://github.com/lcswillems/torch-ac
             log_entropies = []
             log_values = []
             log_policy_losses = []
@@ -70,6 +70,7 @@ class PPOAlgo(BaseAlgo):
             log_goal_value_losses = []
             log_goal_grad_norms = []
 
+            # this is from https://github.com/lcswillems/torch-ac
             for inds in self._get_batches_starting_indexes():
                 # Initialize batch values
                 batch_entropy = 0
@@ -78,6 +79,7 @@ class PPOAlgo(BaseAlgo):
                 batch_value_loss = 0
                 batch_loss = 0
 
+                #This is new
                 goal_batch_entropy = 0
                 goal_batch_value = 0
                 goal_batch_policy_loss = 0
@@ -128,7 +130,7 @@ class PPOAlgo(BaseAlgo):
                         exps.memory[inds + i + 1] = memory.detach()
 
                     #This part is new -adding PPO optimization also to the goal generator(teacher).
-                    # this is in the same form as https://github.com/lcswillems/torch-ac. but updated to goals
+                    # (whithin the general from as as https://github.com/lcswillems/torch-ac. but updated to goals
                     if (exps_goals is not None):
                         sb_goals = exps_goals[inds + i]
 
@@ -161,20 +163,21 @@ class PPOAlgo(BaseAlgo):
                         if self.goal_generator.recurrent and i < self.goal_recurrence - 1:
                             exps_goals.goal_memory[inds + i + 1] = goal_memory.detach()
 
+                # this is from https://github.com/lcswillems/torch-ac
                 batch_entropy /= self.recurrence
                 batch_value /= self.recurrence
                 batch_policy_loss /= self.recurrence
                 batch_value_loss /= self.recurrence
                 batch_loss /= self.recurrence
                 # Update actor-critic
-
+                # this is from https://github.com/lcswillems/torch-ac
                 self.optimizer.zero_grad()
                 batch_loss.backward()
                 grad_norm = sum(p.grad.data.norm(2).item() ** 2 for p in self.acmodel.parameters()) ** 0.5
                 torch.nn.utils.clip_grad_norm_(self.acmodel.parameters(), self.max_grad_norm)
                 self.optimizer.step()
 
-                # Update log values
+                # Update log values# this is from https://github.com/lcswillems/torch-ac
                 log_entropies.append(batch_entropy)
                 log_values.append(batch_value)
                 log_policy_losses.append(batch_policy_loss)
@@ -209,7 +212,7 @@ class PPOAlgo(BaseAlgo):
             #    self.generator_scheduler.step()
 
         # Log some values
-        #goal logs were added
+        ## this is from https://github.com/lcswillems/torch-ac but I added goal logs
         logs = {
             "entropy": 0. if len(log_entropies)==0  else numpy.mean(log_entropies),
             "value": 0. if len(log_entropies)==0 else numpy.mean(log_values),
@@ -238,7 +241,7 @@ class PPOAlgo(BaseAlgo):
         batches_starting_indexes : list of list of int
             the indexes of the experiences to be used at first for each batch
         """
-
+        ## this is from https://github.com/lcswillems/torch-ac
         indexes = numpy.arange(0, self.num_frames, self.recurrence)
         indexes = numpy.random.permutation(indexes)
 
@@ -254,6 +257,8 @@ class PPOAlgo(BaseAlgo):
 
     def _get_goals_batches_starting_indexes(self):
 
+        # This part is new -adding PPO optimization also to the goal generator(teacher).
+        # (whithin the general from as as https://github.com/lcswillems/torch-ac. but updated to goals
         indexes = numpy.arange(0, self.num_frames, self.goal_recurrence)
         indexes = numpy.random.permutation(indexes)
 
