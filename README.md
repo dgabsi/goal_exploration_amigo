@@ -24,7 +24,8 @@ Learning with AMIGo: Adversarially Motivated Intrinsic GOals
 The code if based on starter files of minigrid and on torch-ac framework.
 Available at : https://github.com/lcswillems/torch-ac and https://github.com/lcswillems/rl-starter-files
 The framework was updated and changed to add AMIGo capabilities and to Implement Amigo-Concurrent and Amigo-Multiple.
-For reference to AMIGO implementation AMIGo original code available at:
+
+For reference I used AMIGO implementation AMIGo original code available at:
 https://github.com/facebookresearch/adversarially-motivated-intrinsic-goals
 
 
@@ -50,7 +51,7 @@ For AMIGo mutltiple run:
 - For DoorKey run:
   - python3 train_goal_multiple.py --env MiniGrid-DoorKey-8x8-v0  --frames 5000000 --procs 40 --lr 0.001 --lr-teacher 0.002 --with_amigo_nets 
 
-- For evaluate AMIGo concurrent run:
+For evaluate AMIGo concurrent run:
 - For FourRooms run:
   - python3 evaluate_goal.py --env MiniGrid-FourRooms-v0 --model FOURROOMS_CONCURRENT 
 - For DoorKey run:
