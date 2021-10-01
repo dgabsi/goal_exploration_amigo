@@ -57,7 +57,7 @@ class BaseAlgo(ABC):
         """
 
         # Store parameters
-
+        #This is from https://github.com/lcswillems/torch-ac
         self.env = ParallelEnv(envs)
         self.acmodel = acmodel
         self.device = device
@@ -71,6 +71,8 @@ class BaseAlgo(ABC):
         self.recurrence = recurrence
         self.preprocess_obss = preprocess_obss or default_preprocess_obss
         self.reshape_reward = reshape_reward
+
+        #This is new. Goal generator(teacher) data
         self.log_num_return = log_num_return
         self.goal_generator = goal_generator
         self.image_model=image_model
@@ -107,6 +109,7 @@ class BaseAlgo(ABC):
         self.obs = self.env.reset()
 
         #Student data
+        # This is based on https://github.com/lcswillems/torch-ac
         self.obss = [None]*(shape[0])
         if self.acmodel.recurrent:
             self.memory = torch.zeros(shape[1], self.acmodel.memory_size)
@@ -120,11 +123,9 @@ class BaseAlgo(ABC):
         self.advantages = torch.zeros(*shape).to(self.device)
         self.log_probs = torch.zeros(*shape).to(self.device)
 
-        #This is new
+        #Goal generator data  #This is new
         self.intrin_rewards = torch.zeros(*shape).to(self.device)
         self.init_obss = torch.zeros(*shape, *self.env.observation_space.spaces['image'].shape).to(self.device)
-
-        #Goal generator data  #This is new
         self.added_goal=False
         self.new_goal = torch.zeros(shape[1]).to(self.device)
         self.goals=torch.zeros(*shape).to(self.device)
@@ -153,6 +154,7 @@ class BaseAlgo(ABC):
         self.goal_reached=torch.zeros(shape[1]).to(self.device)
         self.goal_reached_steps = torch.zeros(shape[1]).to(self.device)
 
+        #Store difficulty
         self.difficulty_counts = torch.zeros(shape[1]).to(self.device)
         self.difficulty = torch.full((shape[1],),self.goal_generator_info["difficulty"]).to(self.device)
 
@@ -169,11 +171,13 @@ class BaseAlgo(ABC):
         self.log_episode_goal_count = torch.ones(shape[1]).to(self.device)
 
         # This is based on https://github.com/lcswillems/torch-ac
+        #Episode logs
         self.log_episode_return = torch.zeros(shape[1]).to(self.device)
         self.log_episode_reshaped_return = torch.zeros(shape[1], device=self.device)
         self.log_episode_num_frames = torch.zeros(shape[1]).to(self.device)
 
         # This is new
+        #epsidoe logs for goals
         self.log_episode_goal_reached = torch.zeros(shape[1]).to(self.device)
         self.log_episode_teacher_return = torch.zeros(shape[1]).to(self.device)
         self.log_episode_teacher_intri_return = torch.zeros(shape[1]).to(self.device)
@@ -243,7 +247,9 @@ class BaseAlgo(ABC):
 
             preprocessed_obs = self.preprocess_obss(self.obs, device=self.device)
 
-
+            # This is based on https://github.com/lcswillems/torch-ac
+            #But added with goal information
+            #Recieve next action for Student
             with torch.no_grad():
                 preporocessed_curr_obs_model=self.preprocess_obss(self.obs, device=self.device)
                 preporocessed_curr_obs_model.image=preporocessed_curr_obs_model.image.to(self.device)
@@ -262,7 +268,6 @@ class BaseAlgo(ABC):
             # Update experiences values
             # This is based on https://github.com/lcswillems/torch-ac
             self.obss[i] = self.obs
-
             if self.acmodel.recurrent:
                 self.memories[i] = self.memory
                 self.memory = memory
@@ -271,13 +276,14 @@ class BaseAlgo(ABC):
             self.actions[i] = action
             self.values[i] = value
 
-            ## This is new
+            ## This is new. collect init observation and diff location
             self.init_obss[i] = preprocessed_obs.init_image.clone()
             self.diff_locs[i] = preprocessed_obs.diff.clone()
 
             #The goals were updated in the start of current run
-            #Collect goal data
+            #Collect goal data and add to experiences
             # This is new
+            #calculate goal data
             self.goals[i] = self.goal.clone()
             self.goal_values[i] = self.goal_value.clone()
             self.goal_log_probs[i] = self.goal_log_prob.clone()
@@ -289,13 +295,14 @@ class BaseAlgo(ABC):
             #this is the new observation. calculate intrinstic reward rewards if exists
             curr_obs = self.preprocess_obss(obs, device=self.device)
             #reward shaping
-            # This is new but whithin the general framework
+            # This is new but within the general framework
+            #Calculate teacher and student internal rewards
             if len(self.reshape_reward)>0:
                 curr_intrin_reward=torch.zeros(self.num_procs).to(self.device)
                 curr_teacher_intrin_reward = torch.zeros(self.num_procs).to(self.device)
                 for reshaped_reward in self.reshape_reward:
                     #Calculate student intrin reward
-                    if (reshaped_reward["type"] == "student_goal_reward"):# This is new
+                    if (reshaped_reward["type"] == "student_goal_reward"):# This is new .Calculate student reward
                         for proc in range(self.num_procs):
                             episode_step = preprocessed_obs.episode_step[proc].item()
                             max_steps = (self.env.envs[0].max_steps)
@@ -321,10 +328,11 @@ class BaseAlgo(ABC):
                         #Other reward reshaping
                         curr_intrin_reward += torch.tensor([reshaped_reward["func"](obs_, action_, reward_, done_)
                                                               for obs_, action_, reward_, done_ in zip(obs, action, reward, done)])
+                #clculate the total for student and teacher rewards
                 curr_intrin_reward=torch.clamp(curr_intrin_reward, -1, 1)
                 self.rewards[i]= curr_intrin_reward+1.*(torch.tensor(reward, device=self.device)>0).to(torch.float)+torch.tensor(reward, device=self.device)#torch.clamp(torch.tensor(reward)+curr_intrin_reward, -1, 1)
                 self.orig_rewards[i]=torch.tensor(reward).to(self.device)
-                # This is new
+                # This is new .Teacher rewards
                 self.intrin_rewards[i]=curr_intrin_reward
                 curr_teacher_reshaped_reward = torch.clamp(curr_teacher_intrin_reward, -1, 1)
                 self.intrin_teacher_rewards[i] = curr_teacher_reshaped_reward
@@ -337,22 +345,24 @@ class BaseAlgo(ABC):
             self.log_probs[i] = dist.log_prob(action).to(self.device)
 
 
-            #If goal is reached in current step
+            #Indicate If goal is reached in current step.
             # This is new
             self.goal_reached=((curr_obs.reached_goal+curr_obs.last_e_reached)>=1).to(torch.float)
             self.goal_reached_steps=(preprocessed_obs.episode_step+1 - preprocessed_obs.goal_step)*self.goal_reached
             self.goal_reached_s[i] = self.goal_reached
             self.goal_reached_steps_s[i] = self.goal_reached_steps
 
-            #Gaol reached mask
+            #Goal reached mask
             # This is new
             self.goal_reached_masks[i] = self.goal_reached_mask
             self.goal_reached_mask = 1 - (((curr_obs.reached_goal + (1 - self.mask)) >= 1).to(torch.float))
 
+            # This is based on https://github.com/lcswillems/torch-ac
             self.obs = obs
 
             # Update log values
             self.log_episode_goal_count += self.new_goal
+            # This is based on https://github.com/lcswillems/torch-ac
             self.log_episode_return += torch.tensor(reward, dtype=torch.float).to(self.device)
             self.log_episode_reshaped_return += self.rewards[i]
             self.log_episode_num_frames += torch.ones(self.num_procs).to(self.device)
@@ -419,7 +429,7 @@ class BaseAlgo(ABC):
             self.log_episode_reshaped_return *= self.mask
             self.log_episode_num_frames *= self.mask
 
-            #This is new
+            #This is new. Reset goals logs for episode
             self.log_episode_goal_reached *= self.mask
             self.log_episode_teacher_return *= self.mask
             self.log_episode_teacher_intri_return *= self.mask
@@ -438,7 +448,7 @@ class BaseAlgo(ABC):
                 _, next_value, _= self.acmodel(preporocessed_curr_obs_model, goal, self.memory.to(self.device)* self.mask.unsqueeze(1).to(self.device))
             else:
                 _, next_value, _ = self.acmodel(preporocessed_curr_obs_model, goal=goal)
-
+        #Calculate student advanatages.based on https://github.com/lcswillems/torch-ac
         for i in reversed(range(self.num_frames_per_proc)):
             next_mask = self.masks[i+1] if i < self.num_frames_per_proc - 1 else self.mask
             next_value = self.values[i+1] if i < self.num_frames_per_proc - 1 else next_value
@@ -451,7 +461,7 @@ class BaseAlgo(ABC):
         #this is new
         next_goal_value=next_goal_values
         next_bootstrap_value=next_goal_value
-
+        #This is new . calculate goal advanatages
         if self.goal_generator:#this is new
             for i in reversed(range(self.num_frames_per_proc)):
                 next_goal_reached_mask = self.goal_reached_masks[i + 1] if i < self.num_frames_per_proc - 1 else self.goal_reached_mask
@@ -544,7 +554,7 @@ class BaseAlgo(ABC):
         keep_stat=self.log_num_return*self.num_procs
         keep = max(self.log_done_counter, keep_stat)
         # This is based on https://github.com/lcswillems/torch-ac
-        #But added logs for goals
+        #But I added logs for goals
         logs = {
             "return_per_episode": self.log_return[-keep:],
             "reshaped_return_per_episode": self.log_reshaped_return[-keep:],
@@ -595,6 +605,7 @@ class BaseAlgo(ABC):
             new_goal=np.zeros(self.num_procs, dtype=np.float32)
             preprocessed_obs=self.preprocess_obss(obs)
 
+            #Generate goals
             with torch.no_grad():
                 if self.goal_generator.recurrent:
                     s_goals, s_goal_log_probs, s_goal_values, s_g_memory = self.goal_generator(preprocessed_obs.image.clone().to(self.device), init_obs=preprocessed_obs.init_image.clone().to(self.device), diff=preprocessed_obs.diff.clone().to(self.device), memory=self.goal_memory.to(self.device) * self.goal_reached_mask.unsqueeze(1).to(self.device), carried_col=preprocessed_obs.carried_col.clone().to(self.device), carried_obj=preprocessed_obs.carried_obj.clone().to(self.device))
@@ -617,6 +628,7 @@ class BaseAlgo(ABC):
                     new_goal[proc]=1.
                     if self.goal_generator.recurrent:
                         goal_memory[proc] = s_g_memory[proc].clone()
+                    #Update the next observation to contain the new goal
                     obs[proc]["goal"] = goal[proc].clone().cpu().item()
                     obs[proc]["goal_image"] = goal_obs[proc].clone().cpu().numpy()
                     obs[proc]["goal_diff"] = goal_diff[proc].clone().cpu().item()
@@ -652,6 +664,7 @@ class BaseAlgo(ABC):
         #Collect goals experiences to be transferred to optimization
         next_exps_goals=None
 
+        #Add to goals buffer the new goal data.
         if self.exps_goals is not None:
             self.exps_goals.goal_obs = torch.cat((self.exps_goals.goal_obs, curr_exp_goals.goal_obs), dim=0)
             self.exps_goals.goal_value = torch.cat((self.exps_goals.goal_value, curr_exp_goals.goal_value), dim=0)
@@ -672,6 +685,7 @@ class BaseAlgo(ABC):
 
         if len(self.exps_goals)>=num_batch:
             next_exps_goals = DictList()
+            #This is the next batch for optimization
 
             next_exps_goals.goal_obs = self.exps_goals.goal_obs[:num_batch]
             next_exps_goals.goal_value = self.exps_goals.goal_value[:num_batch]

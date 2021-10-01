@@ -46,6 +46,7 @@ def preprocess_images(images, device=None):
     return torch.tensor(images, device=device, dtype=torch.float)
 
 #this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
+#Not used by the project
 def preprocess_texts(texts, vocab, device=None):
     var_indexed_texts = []
     max_text_len = 0
@@ -64,6 +65,7 @@ def preprocess_texts(texts, vocab, device=None):
     return torch.tensor(indexed_texts, device=device, dtype=torch.long)
 
 #this is part of torch-ac framework available at https://github.com/lcswillems/torch-ac
+#Not used by the project
 class Vocabulary:
     """A mapping from tokens to ids with a capacity of `max_size` words.
     It can be saved in a `vocab.json` file."""

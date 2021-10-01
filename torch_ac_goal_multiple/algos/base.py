@@ -421,12 +421,12 @@ class BaseAlgo(ABC):
                             self.difficulty[b] += 1
                         else:
                             self.difficulty[
-                                b] = difficulty  # torch.maximum(self.difficulty[b], torch.tensor(difficulty))
+                                b] = difficulty
                     else:
                         #****** Update difficulty according to a teacher threshold ***#
                         if torch.mean(self.intrin_teacher_rewards[b][:self.goal_curr_ind[b]]).item() > \
                                 self.goal_generator_info["generator_threshold"]:
-                            self.difficulty_counts[b] += 1  # np.mean(self.log_teacher_return[-self.num_procs:])
+                            self.difficulty_counts[b] += 1
                         else:
                             self.difficulty_counts[b] = 0
                         if self.difficulty_counts[b] >= self.goal_generator_info["difficulty_counts"] and \
@@ -550,7 +550,7 @@ class BaseAlgo(ABC):
             preprocessed_obs = self.preprocess_obss(obs)
             # teacher_quality_goal=torch.zeros(self.num_procs,requires_grad=False)
             with torch.no_grad(): #the teacher suggest goals
-                if self.goal_generator.recurrent:
+                if self.goal_generator.recurrent: #generate the goals
                     s_goals, s_goal_log_probs, s_goal_values, s_goal_distr, s_g_memory = self.goal_generator(
                         preprocessed_obs.image.clone().to(self.device),
                         init_obs=preprocessed_obs.init_image.clone().to(self.device),
@@ -779,7 +779,8 @@ class BaseAlgo(ABC):
 
         num_batch = self.goal_num_frames
 
-        #Prepare for transfer to optimization.
+        #Prepare for next transfer to optimization.
+        #This is done in full episodes (different from amigo concurrrent)
         if ((len(self.exps_goals.goal) >= self.goal_num_frames) and (self.next_exps_goals is None)):
             self.next_exps_goals = DictList()
 

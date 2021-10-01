@@ -80,6 +80,7 @@ class PPOAlgo(BaseAlgo):
                 batch_loss = 0
 
                 #This is new
+                #initalise batch of goals
                 goal_batch_entropy = 0
                 goal_batch_value = 0
                 goal_batch_policy_loss = 0
@@ -96,7 +97,7 @@ class PPOAlgo(BaseAlgo):
 
                 for i in range(self.recurrence):
                     # Create a sub-batch of experience
-
+                    # this is from https://github.com/lcswillems/torch-ac
                     sb = exps[inds + i]
                     # Compute loss
                     if self.acmodel.recurrent:

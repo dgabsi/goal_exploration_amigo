@@ -256,8 +256,9 @@ class PPOAlgo(BaseAlgo):
         goal_ratio = torch.exp(goal_dist.log_prob(sb_goals.goal) - sb_goals.goal_log_prob)
         goal_surr1 = goal_ratio * sb_goals.goal_advantage
         goal_surr2 = torch.clamp(goal_ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps) * sb_goals.goal_advantage
-        goal_policy_loss = -torch.min(goal_surr1, goal_surr2).mean()
+        goal_policy_loss = -torch.min(goal_surr1, goal_surr2).mean() #Goal Policy loss
 
+        #Goal critic loss
         goal_value_clipped = sb_goals.goal_value + torch.clamp(goal_value - sb_goals.goal_value, -self.clip_eps,
                                                                self.clip_eps)
         goal_surr1 = (goal_value - sb_goals.goal_returnn).pow(2)
@@ -271,7 +272,7 @@ class PPOAlgo(BaseAlgo):
 
     def optimize_goals(self, goal_batch_entropy, goal_batch_value, goal_batch_policy_loss, goal_batch_value_loss,goal_batch_loss):
         #Optimization of goals
-        #This is new , but based on https://github.com/lcswillems/torch-ac
+        #This is new , but based on the general framework of https://github.com/lcswillems/torch-ac
 
         goal_batch_entropy /= self.goal_recurrence
         goal_batch_value /= self.goal_recurrence

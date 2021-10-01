@@ -318,7 +318,7 @@ class Observation_WrapperMiniGrid(gym.core.Wrapper):
 
 
 def make_env(env_key, seed=None, fix_seed=True, modify=True, video_dir=None):
-    #Creates a fully observable envvironemnt , with the the dedicated observation wrapper that calculate diff and ass
+    #Creates a fully observable envvironemnt , with the the dedicated observation wrapper that calculate diff and check is a goal is reached
     env = gym.make(env_key)
     env = FullyObsWrapper(env)
     #if video_dir is not None:
