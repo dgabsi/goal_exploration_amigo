@@ -7,7 +7,7 @@ import sys
 
 import utils_baseline
 from utils_baseline import device
-from model import ACModel
+from torch_ac_baseline_model import ACModel
 
 
 # Parse arguments

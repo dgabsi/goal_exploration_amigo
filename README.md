@@ -66,9 +66,9 @@ For AMIGo mutltiple run:
 
 For AMIGo baseline run:
 - For FourRooms run:
-  - python3 -m scripts.train --algo ppo --env MiniGrid-FourRooms-v0 --frames 5000000 --fix_seed 
+  - python3 -m train --algo ppo --env MiniGrid-FourRooms-v0 --frames 5000000 --fix_seed 
 - For DoorKey run:
-  - python3 -m scripts.train --algo ppo --env MiniGrid-DoorKey-8x8-v0 --frames 5000000 --fix_seed 
+  - python3 -m train --algo ppo --env MiniGrid-DoorKey-8x8-v0 --frames 5000000 
 
 packages needed :
 - torch 
